@@ -18,7 +18,7 @@ collected_submodules = [
 
 a = Analysis(
     ['gui/app.py'],  # Script principal de tu GUI
-    pathex=[r'C:\MisProyectos\DescargarMusica'], # <--- RUTA RAÍZ DE TU PROYECTO
+    pathex=[r'C:\Users\joelm\OneDrive\Documents\GitHub\DescargadorMusicaPro'], # <--- RUTA RAÍZ DE TU PROYECTO
     binaries=[],
     datas=datas_to_include, # <--- Usamos la variable definida arriba
     hiddenimports=[],
