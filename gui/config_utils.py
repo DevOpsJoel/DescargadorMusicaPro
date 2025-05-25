@@ -20,7 +20,7 @@ from packaging.version import parse as parse_version
 # --- CONSTANTES DE LA APLICACIÓN Y VERSIÓN ---
 APP_NAME = "DescargadorMusicaPro"
 APP_AUTHOR = "Joel Márquez Magaña" 
-APP_VERSION = "1.0.1"  
+APP_VERSION = "1.0.2"  
 URL_VERSION_JSON = "https://raw.githubusercontent.com/TuUsuarioGitHub/TuRepositorio/main/version.json" 
 
 
