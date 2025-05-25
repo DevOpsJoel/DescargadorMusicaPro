@@ -20,7 +20,7 @@ import appdirs
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from gui.config_utils import (
-    resource_path_gui, APP_NAME, CARPETA_MUSICA, config_app_actual,
+    APP_VERSION, resource_path_gui, APP_NAME, CARPETA_MUSICA, config_app_actual,
     cargar_configuracion_inicial, guardar_configuracion_actual,
     CONFIG_DEFAULTS
 )
@@ -30,7 +30,7 @@ from gui.download_manager import DownloadManager
 cargar_configuracion_inicial() 
 
 app = ctk.CTk()
-app.title(APP_NAME) 
+app.title(f"{APP_NAME} v{config_app_actual.get('app_version', APP_VERSION)}") # Usar APP_VERSION de config_utils
 app.geometry("550x800") 
 app.minsize(500, 650) 
 
@@ -74,6 +74,18 @@ try:
 except Exception as e:
     print(f"Error general cargando iconos: {e}")
 
+# --- Diccionario de iconos de estado (DEFINIDO DESPUÉS DE CARGAR IMÁGENES) ---
+status_icons_map = {
+    "Pendiente": img_status_pending, 
+    "Procesando info...": img_status_processing,
+    "Descargando...": img_status_downloading, 
+    "Completado ✓": img_status_completed,
+    "Error": img_status_error, 
+    "Error Info": img_status_error,
+    "Error General": img_status_error, 
+    "Error: Tipo Inválido": img_status_error
+}
+
 # --- Variables de UI (StringVars) ---
 estado_general_actual_var = ctk.StringVar(value="Ingrese URL para añadir a cola")
 video_titulo_actual_var = ctk.StringVar(value="Título: -")
@@ -95,7 +107,7 @@ barra_progreso_actual = ctk.CTkProgressBar(app, height=15)
 barra_progreso_actual.set(0)
 
 # --- CLASE TOOLTIP ---
-class ToolTip:
+class ToolTip: # ... (código de ToolTip como antes, sin cambios)
     def __init__(self, widget, text_func, delay=600, **kwargs):
         self.widget = widget; self.text_func = text_func; self.delay = delay
         self.tooltip_window = None; self.id_after_show = None; self.id_after_hide = None
@@ -114,11 +126,9 @@ class ToolTip:
         self.tooltip_window=ctk.CTkToplevel(self.widget);self.tooltip_window.wm_overrideredirect(True)
         txt=self.text_func();fg=self.kwargs.get("fg_color",("#F0F0F0","#2B2B2B"));tc=self.kwargs.get("text_color",("#101010","#DCE4EE"));fnt=self.kwargs.get("font",("Arial",10))
         ctk.CTkLabel(self.tooltip_window,text=txt,fg_color=fg,text_color=tc,corner_radius=4,padx=7,pady=4,font=fnt).pack();self._reposition_tooltip_actual();self.tooltip_window.attributes("-topmost",True)
-    def _hide_tooltip_actual(self, e=None):
-        self._cancel_pending_show()
-        if self.tooltip_window:
-            self.tooltip_window.destroy()
-            self.tooltip_window = None
+    def _hide_tooltip_actual(self,e=None):
+        self._cancel_pending_show();
+        if self.tooltip_window:self.tooltip_window.destroy();self.tooltip_window=None
     def _reposition_tooltip_actual(self,e=None):
         if self.tooltip_window:
             x,y=self.widget.winfo_pointerx()+15,self.widget.winfo_pointery()+20;self.tooltip_window.update_idletasks()
@@ -127,14 +137,15 @@ class ToolTip:
             if y+th>sh-10:y=self.widget.winfo_pointery()-th-15
             self.tooltip_window.wm_geometry(f"+{x}+{y}")
 
-# --- Funciones de Ayuda y Callbacks ---
-def cargar_imagen_para_gui(url_imagen, etiqueta_destino_widget_ref):
+
+# --- Funciones de Ayuda y Callbacks (sin cambios en su lógica interna) ---
+def cargar_imagen_para_gui(url_imagen, etiqueta_destino_widget_ref): # Sin cambios
     if not url_imagen:
         if etiqueta_destino_widget_ref: app.after(0, lambda: (etiqueta_destino_widget_ref.configure(image=None, text="Miniatura no disponible"), setattr(etiqueta_destino_widget_ref, 'image_ref', None)))
         return
     threading.Thread(target=hilo_cargar_imagen_bytes, args=(url_imagen, etiqueta_destino_widget_ref), daemon=True).start()
 
-def hilo_cargar_imagen_bytes(url_imagen, etiqueta_destino_widget_ref):
+def hilo_cargar_imagen_bytes(url_imagen, etiqueta_destino_widget_ref): # Sin cambios
     try:
         req = urllib.request.Request(url_imagen, headers={'User-Agent': 'Mozilla/5.0'})
         with urllib.request.urlopen(req, timeout=10) as u: raw_data = u.read()
@@ -155,7 +166,7 @@ def hilo_cargar_imagen_bytes(url_imagen, etiqueta_destino_widget_ref):
         if etiqueta_destino_widget_ref: app.after(0, lambda: (etiqueta_destino_widget_ref.configure(image=img_ctk, text=""), setattr(etiqueta_destino_widget_ref, 'image_ref', img_ctk) ))
     except Exception as e: print(f"Error img ({url_imagen}): {e}");app.after(0, lambda: (etiqueta_destino_widget_ref.configure(image=None, text="Error miniatura"), setattr(etiqueta_destino_widget_ref, 'image_ref', None) ) if etiqueta_destino_widget_ref else None)
 
-def abrir_carpeta_descargas_ui_cmd():
+def abrir_carpeta_descargas_ui_cmd(): # Sin cambios
     global CARPETA_MUSICA 
     try:
         if platform.system() == "Windows": os.startfile(os.path.realpath(CARPETA_MUSICA))
@@ -164,7 +175,7 @@ def abrir_carpeta_descargas_ui_cmd():
     except FileNotFoundError: messagebox.showerror("Error", f"Carpeta no existe: {CARPETA_MUSICA}", parent=app)
     except Exception as e: messagebox.showerror("Error", f"No se pudo abrir carpeta ({CARPETA_MUSICA}):\n{e}", parent=app)
         
-def abrir_ventana_configuracion_ui_cmd():
+def abrir_ventana_configuracion_ui_cmd(): # Sin cambios
     global CARPETA_MUSICA, config_app_actual, info_carpeta_descargas_label, app, CONFIG_DEFAULTS
     config_window = ctk.CTkToplevel(app); config_window.title("Configuración"); config_window.geometry("550x280"); config_window.attributes("-topmost", True); config_window.grab_set()
     temp_dl_var = ctk.StringVar(value=CARPETA_MUSICA); temp_app_mode_var = ctk.StringVar(value=config_app_actual.get("appearance_mode", CONFIG_DEFAULTS["appearance_mode"])); temp_color_theme_var = ctk.StringVar(value=config_app_actual.get("color_theme", CONFIG_DEFAULTS["color_theme"]))
@@ -192,25 +203,20 @@ def abrir_ventana_configuracion_ui_cmd():
     ctk.CTkButton(baf,text="Guardar y Aplicar",command=guardar_y_aplicar_cambios_config_win).pack(side="left",padx=10); ctk.CTkButton(baf,text="Cancelar",command=config_window.destroy).pack(side="left",padx=10); config_window.bind("<Escape>",lambda e:config_window.destroy())
 
 # --- LAYOUT DE LA INTERFAZ GRÁFICA PRINCIPAL (CON SIDEBAR) ---
-sidebar_frame = ctk.CTkFrame(app, width=280, corner_radius=0); 
-sidebar_frame.grid(row=0, column=0, sticky="nsew", padx=(10,5), pady=10)
-sidebar_frame.grid_rowconfigure(3, weight=1) 
-frame_titulo_y_config = ctk.CTkFrame(sidebar_frame, fg_color="transparent"); 
-frame_titulo_y_config.grid(row=0, column=0, padx=10, pady=(10,10), sticky="ew")
+# ... (El layout de la GUI como estaba, incluyendo la creación de todos los widgets como entrada_url_dm, etc.)
+# ... (y la asignación de los widgets a ui_elements_for_manager)
+sidebar_frame = ctk.CTkFrame(app, width=280, corner_radius=0); sidebar_frame.grid(row=0, column=0, sticky="nsew", padx=(10,5), pady=10); sidebar_frame.grid_rowconfigure(3, weight=1) 
+frame_titulo_y_config = ctk.CTkFrame(sidebar_frame, fg_color="transparent"); frame_titulo_y_config.grid(row=0, column=0, padx=10, pady=(10,10), sticky="ew")
 ctk.CTkLabel(frame_titulo_y_config, text=APP_NAME, font=("Arial", 16, "bold")).pack(side="left", anchor="w")
 boton_configuracion = ctk.CTkButton(frame_titulo_y_config, text="", image=img_settings, width=30, height=30, command=abrir_ventana_configuracion_ui_cmd)
 if img_settings is None: boton_configuracion.configure(text="⚙️")
 boton_configuracion.pack(side="right")
-frame_entrada_opciones = ctk.CTkFrame(sidebar_frame, fg_color="transparent")
-frame_entrada_opciones.grid(row=1, column=0, padx=10, pady=5, sticky="new")
+frame_entrada_opciones = ctk.CTkFrame(sidebar_frame, fg_color="transparent"); frame_entrada_opciones.grid(row=1, column=0, padx=10, pady=5, sticky="new")
 ctk.CTkLabel(frame_entrada_opciones, text="Ingresa URL de YouTube:").pack(pady=(0,2), anchor="w")
-entrada_url_dm = ctk.CTkEntry(frame_entrada_opciones, placeholder_text="URL del video o playlist...")
-entrada_url_dm.pack(pady=(0,5), fill="x")
-frame_opciones_calidad = ctk.CTkFrame(frame_entrada_opciones, fg_color="transparent")
-frame_opciones_calidad.pack(pady=(0,5), fill="x", anchor="w")
+entrada_url_dm = ctk.CTkEntry(frame_entrada_opciones, placeholder_text="URL del video o playlist..."); entrada_url_dm.pack(pady=(0,5), fill="x")
+frame_opciones_calidad = ctk.CTkFrame(frame_entrada_opciones, fg_color="transparent"); frame_opciones_calidad.pack(pady=(0,5), fill="x", anchor="w")
 ctk.CTkLabel(frame_opciones_calidad, text="Calidad MP3:").pack(side="left", padx=(0,5))
-combobox_calidad = ctk.CTkComboBox(frame_opciones_calidad, values=list(opciones_calidad_audio_map_app.keys()), variable=calidad_audio_display_var_app, width=170)
-combobox_calidad.pack(side="left")
+combobox_calidad = ctk.CTkComboBox(frame_opciones_calidad, values=list(opciones_calidad_audio_map_app.keys()), variable=calidad_audio_display_var_app, width=170); combobox_calidad.pack(side="left")
 
 ui_elements_for_manager = {
     "entrada_url_widget": entrada_url_dm, "estado_general_actual_var": estado_general_actual_var,
@@ -220,48 +226,28 @@ ui_elements_for_manager = {
     "opciones_calidad_audio_map": opciones_calidad_audio_map_app, 
     "frame_estado_y_acciones_actual": None, "estado_label_actual_widget": None 
 }
-# --- PASAR ICONOS DE ESTADO AL DOWNLOAD MANAGER ---
-status_icons_map = {
-    "Pendiente": img_status_pending, "Procesando info...": img_status_processing,
-    "Descargando...": img_status_downloading, "Completado ✓": img_status_completed,
-    "Error": img_status_error, "Error Info": img_status_error,
-    "Error General": img_status_error, "Error: Tipo Inválido": img_status_error
-}
-download_mgr = DownloadManager(app, ui_elements_for_manager, CARPETA_MUSICA, opciones_calidad_audio_map_app, calidad_audio_display_var_app, status_icons_map) # Argumento añadido
-
-boton_anadir_a_cola = ctk.CTkButton(frame_entrada_opciones, text="Añadir a Cola", image=img_add_queue, compound="left", command=lambda: download_mgr.gestionar_nueva_url(entrada_url_dm.get().strip()), height=40) 
-boton_anadir_a_cola.pack(pady=(5,10), fill="x")
+download_mgr = DownloadManager(app, ui_elements_for_manager, CARPETA_MUSICA, opciones_calidad_audio_map_app, calidad_audio_display_var_app, status_icons_map) 
+boton_anadir_a_cola = ctk.CTkButton(frame_entrada_opciones, text="Añadir a Cola", image=img_add_queue, compound="left", command=lambda: download_mgr.gestionar_nueva_url(entrada_url_dm.get().strip()), height=40); boton_anadir_a_cola.pack(pady=(5,10), fill="x")
 
 ctk.CTkLabel(sidebar_frame, text="Cola de Descargas:", font=("Arial", 13, "bold")).grid(row=2, column=0, padx=10, pady=(10,2), sticky="sw")
 queue_scrollable_area_dm = ctk.CTkScrollableFrame(sidebar_frame, label_text="", fg_color=("gray90", "gray20"), corner_radius=6, border_width=1, border_color=("gray75", "gray30"))
 queue_scrollable_area_dm.grid(row=3, column=0, sticky="nsew", padx=10, pady=(0,10))
 ui_elements_for_manager["frame_elementos_cola"] = queue_scrollable_area_dm
 
-main_content_frame = ctk.CTkFrame(app, fg_color="transparent", corner_radius=0)
-main_content_frame.grid(row=0, column=1, sticky="nsew", padx=(5,10), pady=10)
-main_content_frame.grid_rowconfigure(0, weight=1); main_content_frame.grid_columnconfigure(0, weight=1)
-panel_descarga_actual = ctk.CTkFrame(main_content_frame, fg_color=("gray88", "gray22"), corner_radius=10, border_width=1, border_color=("gray75", "gray30"))
-panel_descarga_actual.grid(row=0, column=0, sticky="nsew", padx=0, pady=0)
-panel_descarga_actual.grid_columnconfigure(0, weight=1); panel_descarga_actual.grid_rowconfigure(1, weight=1)
-frame_info_video = ctk.CTkFrame(panel_descarga_actual, fg_color="transparent")
-frame_info_video.grid(row=0, column=0, pady=(10,5), padx=10, sticky="new")
-ctk.CTkLabel(frame_info_video, textvariable=video_titulo_actual_var, wraplength=main_content_frame.winfo_width() - 40 if main_content_frame.winfo_width() > 40 else 400, justify="left", font=("Arial", 16, "bold")).pack(pady=(5,2), anchor="w") # wraplength dinámico
+main_content_frame = ctk.CTkFrame(app, fg_color="transparent", corner_radius=0); main_content_frame.grid(row=0, column=1, sticky="nsew", padx=(5,10), pady=10); main_content_frame.grid_rowconfigure(0, weight=1); main_content_frame.grid_columnconfigure(0, weight=1)
+panel_descarga_actual = ctk.CTkFrame(main_content_frame, fg_color=("gray88", "gray22"), corner_radius=10, border_width=1, border_color=("gray75", "gray30")); panel_descarga_actual.grid(row=0, column=0, sticky="nsew", padx=0, pady=0); panel_descarga_actual.grid_columnconfigure(0, weight=1); panel_descarga_actual.grid_rowconfigure(1, weight=1)
+frame_info_video = ctk.CTkFrame(panel_descarga_actual, fg_color="transparent"); frame_info_video.grid(row=0, column=0, pady=(10,5), padx=10, sticky="new")
+ctk.CTkLabel(frame_info_video, textvariable=video_titulo_actual_var, wraplength=main_content_frame.winfo_width() - 40 if main_content_frame.winfo_ismapped() and main_content_frame.winfo_width() > 40 else 400, justify="left", font=("Arial", 16, "bold")).pack(pady=(5,2), anchor="w")
 ctk.CTkLabel(frame_info_video, textvariable=video_duracion_actual_var, justify="left", font=("Arial", 12)).pack(pady=(0,10), anchor="w")
-etiqueta_imagen_actual = ctk.CTkLabel(panel_descarga_actual, text="Miniatura del video actual", fg_color="gray25", corner_radius=6)
-etiqueta_imagen_actual.grid(row=1, column=0, pady=5, padx=10, sticky="nsew") 
-etiqueta_imagen_actual.image_ref = None
+etiqueta_imagen_actual = ctk.CTkLabel(panel_descarga_actual, text="Miniatura del video actual", fg_color="gray25", corner_radius=6); etiqueta_imagen_actual.grid(row=1, column=0, pady=5, padx=10, sticky="nsew"); etiqueta_imagen_actual.image_ref = None
 ui_elements_for_manager["etiqueta_imagen_actual"] = etiqueta_imagen_actual
-
-frame_estado_y_acciones_actual_dm = ctk.CTkFrame(panel_descarga_actual, fg_color="transparent")
-frame_estado_y_acciones_actual_dm.grid(row=2, column=0, pady=(10,10), padx=10, sticky="ew")
+frame_estado_y_acciones_actual_dm = ctk.CTkFrame(panel_descarga_actual, fg_color="transparent"); frame_estado_y_acciones_actual_dm.grid(row=2, column=0, pady=(10,10), padx=10, sticky="ew")
 ui_elements_for_manager["frame_estado_y_acciones_actual"] = frame_estado_y_acciones_actual_dm
 estado_label_actual_dm = ctk.CTkLabel(frame_estado_y_acciones_actual_dm, textvariable=estado_general_actual_var, font=("Arial", 11), wraplength=430); estado_label_actual_dm.pack(pady=(5,5)) 
 ui_elements_for_manager["estado_label_actual_widget"] = estado_label_actual_dm
 ui_elements_for_manager["barra_progreso_actual"] = barra_progreso_actual
 
-frame_pie_pagina = ctk.CTkFrame(app, fg_color="transparent", height=50) 
-frame_pie_pagina.grid(row=1, column=0, columnspan=2, sticky="ew", padx=10, pady=(5,10))
-frame_pie_pagina.grid_columnconfigure(0, weight=1); frame_pie_pagina.grid_columnconfigure(1, weight=0) 
+frame_pie_pagina = ctk.CTkFrame(app, fg_color="transparent", height=50); frame_pie_pagina.grid(row=1, column=0, columnspan=2, sticky="ew", padx=10, pady=(5,10)); frame_pie_pagina.grid_columnconfigure(0, weight=1); frame_pie_pagina.grid_columnconfigure(1, weight=0) 
 info_carpeta_descargas_label = ctk.CTkLabel(frame_pie_pagina, text=f"Carpeta por defecto: {CARPETA_MUSICA}", font=("Arial", 10), text_color="gray50", wraplength=400)
 info_carpeta_descargas_label.grid(row=0, column=0, sticky="w", padx=(5,10), pady=5)
 if info_carpeta_descargas_label: info_carpeta_descargas_label.configure(text=f"Carpeta por defecto: {CARPETA_MUSICA}")
@@ -273,5 +259,16 @@ app.cargar_imagen_para_gui = cargar_imagen_para_gui
 if boton_configuracion : ToolTip(boton_configuracion, lambda: "Configuración")
 if boton_anadir_a_cola: ToolTip(boton_anadir_a_cola, lambda: "Añadir URL a la cola de descargas")
 if boton_abrir_carpeta: ToolTip(boton_abrir_carpeta, lambda: f"Abrir carpeta por defecto:\n{CARPETA_MUSICA}")
+
+# --- VERIFICAR ACTUALIZACIONES AL INICIO ---
+def iniciar_verificacion_actualizaciones():
+    if download_mgr and hasattr(download_mgr, 'ui') and download_mgr.ui.get("estado_general_actual_var") :
+        print("Iniciando verificación de actualizaciones en segundo plano...")
+        threading.Thread(target=verificar_actualizaciones_en_hilo, 
+                         args=(app, download_mgr.ui), 
+                         daemon=True).start()
+    else:
+        print("Advertencia: DownloadManager o sus UI refs no listos, no se verifican actualizaciones.")
+app.after(2000, iniciar_verificacion_actualizaciones)
 
 app.mainloop()

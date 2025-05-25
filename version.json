@@ -1,5 +1,5 @@
 {
     "latest_version": "1.0.1", 
-    "download_url": "URL_DEL_NUEVO_SETUP.EXE", 
+    "download_url": "https://github.com/DevOpsJoel/DescargadorMusicaPro/releases/download/MusicDownloader/DescargadorMusicaPro--Setup.exe", 
     "release_notes": "- Corrección X.\n- Nueva función Y."
 }
